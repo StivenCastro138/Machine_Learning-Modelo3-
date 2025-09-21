@@ -32,8 +32,8 @@ El núcleo de este proyecto no fue solo construir un clasificador, sino también
  ┃ ┃ ┣ 📊 arbol_de_decision_final.png
  ┃ ┃ ┗ 📊 desempeno_final.png
  ┃ ┣ 📂 pdf
- ┃ ┃ ┗ 📜 Informe_Semana5.pdf
- ┃ ┣ 📜 Informe_Semana5.tex
+ ┃ ┃ ┗ 📜 Informe_final.pdf
+ ┃ ┣ 📜 main.tex
  ┃ ┗ 📜 referencias.bib
  ┣ 📜 main.py
  ┣ 📜 requirements.txt

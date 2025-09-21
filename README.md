@@ -71,22 +71,6 @@ Esto generará:
 
 ---
 
-## 📊 Resultados y Gráficos
-
-### 🔹 1. Desempeño del Modelo en 50 Simulaciones
-
-Este gráfico muestra la Exactitud, el F1-Score y el Z-Score a lo largo de las 50 ejecuciones. Permite evaluar tanto el rendimiento promedio como la estabilidad del modelo.
-
-![Gráfico de Desempeño](Graficos/desempeno_final.png)
-
-### 🔹 2. Visualización del Árbol de Decisión
-
-Este gráfico muestra la lógica interna del modelo final, visualizando las reglas que aprendió para clasificar los correos después de eliminar la fuga de datos.
-
-![Árbol de Decisión](Graficos/arbol_de_decision_final.png)
-
----
-
 ## 📑 Informe en LaTeX
 
 El informe académico completo, que detalla la metodología, el descubrimiento de la fuga de datos y las conclusiones, está disponible en:

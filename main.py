@@ -1,156 +1,133 @@
-print("✅ Script final iniciado. Generando todos los análisis para el informe...")
 import pandas as pd
 import numpy as np
-import seaborn as sns
 import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split, cross_val_score
-from sklearn.preprocessing import StandardScaler
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import confusion_matrix, classification_report, roc_curve, roc_auc_score
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier, plot_tree
+from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import accuracy_score, f1_score
+from sklearn.feature_extraction.text import TfidfVectorizer
+import re
+import os
 
-# --- CARGAR Y PREPARAR DATOS ---
+# --- 0. Preparación de Carpetas ---
+if not os.path.exists('Graficos'):
+    os.makedirs('Graficos')
+
+# --- Fase 1: Preparación de Datos (Sin Fuga de Información) ---
+
 try:
-    df = pd.read_csv('email_dataset.csv')
+    df = pd.read_csv('Dataset/email_dataset.csv')
 except FileNotFoundError:
-    print("Error: Asegúrate de que tu archivo CSV ('email_dataset.csv') esté en la misma carpeta.")
+    print("Error: Asegúrate de que el archivo 'email_dataset.csv' está en la carpeta 'Dataset'.")
     exit()
 
-# Mapeamos etiquetas
-etiqueta_map = {'spam': 1, 'ham': 0}
-df['Clase'] = df['Clase'].map(etiqueta_map)
-df.dropna(subset=['Clase'], inplace=True)
-df['Clase'] = df['Clase'].astype(int)
+df['TextoCompleto'] = df['Asunto'].fillna('') + ' ' + df['Cuerpo'].fillna('')
+def limpiar_texto(texto):
+    texto = texto.lower()
+    texto = re.sub(r'\S+@\S+', '', texto)
+    texto = re.sub(r'\d+', '', texto)
+    texto = re.sub(r'[^\w\s]', '', texto)
+    texto = texto.strip()
+    return texto
+df['TextoCompleto'] = df['TextoCompleto'].apply(limpiar_texto)
 
-# 🔹 Eliminamos soplones directos
-df = df.drop(columns=['FrecuenciaPalabrasSpam', 'ErroresOrtograficos', 'Cuerpo'], errors='ignore')
+vectorizer = TfidfVectorizer(max_features=100)
+X_text = vectorizer.fit_transform(df['TextoCompleto']).toarray()
+X_text_features = pd.DataFrame(X_text, columns=vectorizer.get_feature_names_out())
 
-# 🔹 Creamos features
-df['Asunto_Longitud'] = df['Asunto'].astype(str).apply(len)
-df['Asunto_NumExclamaciones'] = df['Asunto'].astype(str).apply(lambda x: x.count('!'))
-df['Asunto_NumMayus'] = df['Asunto'].astype(str).apply(lambda x: sum(1 for c in x if c.isupper()))
+# Eliminamos todas las columnas que puedan contener fugas de datos.
+features_numericas = ['LongitudTexto', 'ProporcionMayus', 'URLs', 'NumDestinatarios']
+print("Se han eliminado las columnas con posible fuga de datos para un modelo realista.")
+X_numericas = df[features_numericas]
 
-# 🔹 Extraemos la hora de la fecha
-df['Hora'] = pd.to_datetime(df['FechaHora']).dt.hour
+# Combinamos únicamente los metadatos crudos con el análisis de texto
+X = pd.concat([
+    X_numericas.reset_index(drop=True), 
+    X_text_features.reset_index(drop=True)
+], axis=1)
 
-# 🔹 Definimos features finales
-features_finales = [
-    'LongitudTexto',
-    'ProporcionMayus',
-    'URLs',
-    'NumDestinatarios',
-    'Asunto_Longitud',
-    'Asunto_NumExclamaciones',
-    'Asunto_NumMayus',
-    'Hora',
-    'Formato',
-    'Sector',
-    'Prioridad',
-    'Adjuntos'
-]
+le_clase = LabelEncoder()
+y = le_clase.fit_transform(df['Clase'])
 
-# Reaplicamos encoding solo a las categóricas necesarias
-df_encoded = pd.get_dummies(df[features_finales + ['Clase']], 
-                            columns=['Formato', 'Sector', 'Prioridad', 'Adjuntos'], 
-                            drop_first=True)
+print("Fase de preparación de datos completada.")
 
-# --- ANÁLISIS DE CORRELACIÓN ---
-print("\nGenerando análisis de correlación...")
-numeric_features = [
-    'LongitudTexto', 'ProporcionMayus', 'URLs', 
-    'NumDestinatarios', 'Asunto_Longitud', 
-    'Asunto_NumExclamaciones', 'Asunto_NumMayus', 'Hora'
-]
-correlation_matrix = df[numeric_features + ['Clase']].corr()
+# --- Bucle de Simulación ---
 
-# Gráfico 1: Matriz de Correlación
-plt.figure(figsize=(10, 8))
-sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', fmt=".2f")
-plt.title('Gráfico 1: Matriz de Correlación de Features Numéricas')
-plt.savefig('grafico_1_correlacion.png')
-print("Gráfico 1 guardado como 'grafico_1_correlacion.png'")
+accuracy_scores = []
+f1_scores = []
+n_runs = 50
 
-# --- SELECCIÓN DE CARACTERÍSTICAS Y DIVISIÓN DE DATOS ---
-X = df_encoded.drop(columns=['Clase'])
-y = df_encoded['Clase']
+print(f"Iniciando simulación de {n_runs} ejecuciones con el modelo final...")
 
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42, stratify=y
-)
+for i in range(n_runs):
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=i, stratify=y)
+    
+    # Usamos un modelo sin restricciones para ver su verdadero potencial con datos limpios
+    model = DecisionTreeClassifier(random_state=i)
+    
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+    accuracy = accuracy_score(y_test, y_pred)
+    f1 = f1_score(y_test, y_pred, average='weighted')
+    
+    accuracy_scores.append(accuracy)
+    f1_scores.append(f1)
 
-# --- CONSTRUCCIÓN Y ENTRENAMIENTO DEL MODELO LOGÍSTICO ---
-print("\nConstruyendo y entrenando el modelo de Regresión Logística...")
-scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(X_train)
-X_test_scaled = scaler.transform(X_test)
+print("Simulación finalizada.")
 
-model = LogisticRegression(max_iter=10000)
-model.fit(X_train_scaled, y_train)
-print("¡Modelo entrenado!")
+# --- Fase 6: Gráficos y Visualizaciones ---
 
-# --- PREDICCIONES Y MÉTRICAS DE ERROR ---
-y_pred = model.predict(X_test_scaled)
-y_pred_prob = model.predict_proba(X_test_scaled)[:, 1]
+# 1. VISUALIZACIÓN DEL ÁRBOL DE DECISIÓN
+print("\nGenerando visualización del Árbol de Decisión...")
+final_model = DecisionTreeClassifier(random_state=42)
+final_model.fit(X, y)
 
-# Métricas de error y rendimiento
-accuracy = (y_pred == y_test).mean()
-error_rate = 1 - accuracy
-report = classification_report(y_test, y_pred, output_dict=True)
-precision_spam = report['1']['precision']
-f1_spam = report['1']['f1-score']
+plt.figure(figsize=(25, 15))
+plot_tree(final_model, 
+          feature_names=X.columns.astype(str), 
+          class_names=le_clase.classes_, 
+          filled=True, 
+          rounded=True,
+          fontsize=10)
+plt.title("Visualización del Árbol de Decisión (Sin Fuga de Datos)", fontsize=24)
+plt.savefig("Graficos/arbol_de_decision_final.png")
+plt.show()
 
-print("\n--- Métricas de Rendimiento y Error ---")
-print(f"Exactitud (Accuracy): {accuracy:.4f}")
-print(f"Tasa de Error: {error_rate:.4f}")
-print(f"Precisión para SPAM: {precision_spam:.4f}")
-print(f"F1-Score para SPAM: {f1_spam:.4f}")
-print("---------------------------------------")
+# 2. GRÁFICO DE DESEMPEÑO
+accuracy_mean = np.mean(accuracy_scores)
+accuracy_std = np.std(accuracy_scores)
+z_scores_accuracy = [(score - accuracy_mean) / accuracy_std if accuracy_std > 0 else 0 for score in accuracy_scores]
 
-# --- ANÁLISIS DETALLADO Y GRÁFICOS ---
+plt.style.use('seaborn-v0_8-whitegrid')
+fig, ax1 = plt.subplots(figsize=(15, 8))
+ax1.set_xlabel('Número de Ejecución', fontsize=12)
+ax1.set_ylabel('Valor de la Métrica (Accuracy / F1)', fontsize=12)
+ax1.plot(range(n_runs), accuracy_scores, marker='o', linestyle='-', label='Exactitud (Accuracy)', alpha=0.7)
+ax1.plot(range(n_runs), f1_scores, marker='x', linestyle='--', label='F1-Score', alpha=0.7)
+ax1.axhline(accuracy_mean, color='blue', lw=2, linestyle=':', label=f'Promedio Exactitud: {accuracy_mean:.4f}')
+ax1.set_ylim(0.8, 1.0) # Ajustamos el eje Y para ver mejor la variación
+ax2 = ax1.twinx()
+ax2.set_ylabel('Z-Score de la Exactitud', fontsize=12, color='red')
+ax2.plot(range(n_runs), z_scores_accuracy, marker='.', linestyle=':', label='Z-Score (Accuracy)', color='red', alpha=0.7)
+fig.suptitle('Desempeño del Modelo Final (Sin Fuga de Datos)', fontsize=16)
+fig.legend(loc='upper right', bbox_to_anchor=(0.9, 0.9))
+plt.tight_layout(rect=[0, 0, 1, 0.96])
+plt.savefig("Graficos/desempeno_final.png")
+plt.show()
 
-# Gráfico 2: Matriz de Confusión
-cm = confusion_matrix(y_test, y_pred)
-plt.figure(figsize=(8, 6))
-title = f'Gráfico 2: Matriz de Confusión (sobre {len(y_test)} muestras de prueba)'
-sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=['HAM', 'SPAM'], yticklabels=['HAM', 'SPAM'])
-plt.xlabel('Predicción del Modelo')
-plt.ylabel('Valor Real')
-plt.title(title)
-plt.savefig('grafico_2_matriz_confusion.png')
-print("Gráfico 2 guardado como 'grafico_2_matriz_confusion.png'")
+# --- Fase 7: Resumen de Precisión Numérica ---
 
-# Gráfico 3: Importancia de Características
-importances = pd.DataFrame(data={'Feature': X.columns, 'Importance': model.coef_[0]})
-importances = importances.sort_values(by='Importance', key=abs, ascending=False)
-plt.figure(figsize=(12, 8))
-sns.barplot(x='Importance', y='Feature', data=importances.head(15))
-plt.title('Gráfico 3: Importancia de cada Característica (Feature Importance)')
-plt.savefig('grafico_3_importancia_features.png')
-print("Gráfico 3 guardado como 'grafico_3_importancia_features.png'")
+print("\n" + "="*50)
+print("     RESUMEN DE PRECISIÓN EN LAS 50 EJECUCIONES")
+print("="*50)
+print(f"\nExactitud (Accuracy):")
+print(f"  - Precisión Promedio: {np.mean(accuracy_scores):.4f}")
+print(f"  - Desviación Estándar: {np.std(accuracy_scores):.4f}")
+print(f"  - Mejor Ejecución:    {np.max(accuracy_scores):.4f}")
+print(f"  - Peor Ejecución:     {np.min(accuracy_scores):.4f}")
 
-# Gráfico 4: Distribución de Probabilidades y Umbrales
-fpr, tpr, thresholds_roc = roc_curve(y_test, y_pred_prob)
-optimal_idx = np.argmax(tpr - fpr)
-optimal_threshold = thresholds_roc[optimal_idx]
-
-plt.figure(figsize=(12, 7))
-sns.histplot(x=y_pred_prob, hue=y_test, kde=True, bins=50)
-plt.title('Gráfico 4: Distribución de Probabilidades y Umbrales')
-plt.xlabel('Probabilidad Predicha de ser SPAM')
-plt.ylabel('Cantidad de Correos')
-plt.axvline(0.5, color='red', linestyle='--', label=f'Umbral por Defecto (0.5)')
-plt.axvline(optimal_threshold, color='green', linestyle='--', label=f'Umbral Óptimo ({optimal_threshold:.2f})')
-plt.legend()
-plt.savefig('grafico_4_distribucion_probabilidades.png')
-print("Gráfico 4 guardado como 'grafico_4_distribucion_probabilidades.png'")
-
-# --- VALIDACIÓN CRUZADA ---
-print("\nEjecutando validación cruzada (5 folds)...")
-scores_f1 = cross_val_score(model, scaler.transform(X), y, cv=5, scoring='f1')
-scores_acc = cross_val_score(model, scaler.transform(X), y, cv=5, scoring='accuracy')
-
-print("\n--- Validación Cruzada ---")
-print(f"F1 promedio: {scores_f1.mean():.4f} ± {scores_f1.std():.4f}")
-print(f"Accuracy promedio: {scores_acc.mean():.4f} ± {scores_acc.std():.4f}")
-print("--------------------------")
-
-print("\n✅ ¡Proceso completado! Revisa los 4 archivos .png y los resultados en consola.")
+print(f"\nF1-Score:")
+print(f"  - F1-Score Promedio:  {np.mean(f1_scores):.4f}")
+print(f"  - Desviación Estándar: {np.std(f1_scores):.4f}")
+print("\n" + "="*50)

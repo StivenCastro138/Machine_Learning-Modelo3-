@@ -1,53 +1,52 @@
-# 📧 Clasificación de Correos: SPAM vs HAM
+# 🌳 Clasificación de Correos con Árbol de Decisión: SPAM vs HAM
 
-Proyecto académico que implementa un modelo de **Regresión Logística** para clasificar correos electrónicos en **SPAM** o **HAM**.
-Incluye dataset, código en Python, métricas de rendimiento, gráficos interpretativos y un **informe técnico en LaTeX/Overleaf**.
+Proyecto académico para la semana 5 que implementa un modelo de **Árbol de Decisión (CART)** para clasificar correos electrónicos en **SPAM** o **HAM**.
 
----
-
-## 🚀 Características principales
-
-* Preprocesamiento del dataset (`Dataset/email_dataset.csv`).
-* Ingeniería de características: remitente, asunto, longitud, proporción de mayúsculas, URLs, adjuntos, entre otros.
-* Entrenamiento con **Regresión Logística**.
-* Evaluación con métricas (Accuracy, Error Rate, Precision, F1).
-* Validación cruzada.
-* Visualizaciones clave.
-* Informe académico en **LaTeX + PDF**.
+El núcleo de este proyecto no fue solo construir un clasificador, sino también realizar un análisis crítico del dataset, identificando y resolviendo un problema de **fuga de datos (data leakage)** que inicialmente conducía a una precisión irreal del 100%.
 
 ---
 
-## 📂 Estructura del repositorio
+## 🚀 Características Principales
+
+* **Preparación de Datos**: Limpieza de texto y vectorización con **TF-IDF**.
+* **Modelo**: Implementación de `DecisionTreeClassifier` de Scikit-Learn.
+* **Análisis de Data Leakage**: Identificación y eliminación de características "spoiler" (`Prioridad`, `FrecuenciaPalabrasSpam`) para construir un modelo realista.
+* **Simulación Rigurosa**: Ejecución de 50 simulaciones con diferentes divisiones de datos para una evaluación robusta.
+* **Métricas de Rendimiento**: Medición con **Exactitud (Accuracy)**, **F1-Score** y **Z-Score**.
+* **Visualizaciones Clave**: Generación de gráficos de rendimiento y visualización del árbol de decisión final.
+* **Informe Académico**: Documentación completa del proceso y los hallazgos en **LaTeX + PDF**.
+
+---
+
+## 📂 Estructura del Repositorio
 
 ```
-📦 Clasificacion-SPAM-HAM
+📦 Clasificacion-SPAM-DecisionTree
  ┣ 📂 Dataset
  ┃ ┗ 📜 email_dataset.csv
- ┣ 📂 Gráficos
- ┃ ┣ 📊 grafico_1_correlacion.png
- ┃ ┣ 📊 grafico_2_matriz_confusion.png
- ┃ ┣ 📊 grafico_3_importancia_features.png
- ┃ ┗ 📊 grafico_4_distribucion_probabilidades.png
+ ┣ 📂 Graficos
+ ┃ ┣ 📊 arbol_de_decision_final.png
+ ┃ ┗ 📊 desempeno_final.png
  ┣ 📂 Informe
  ┃ ┣ 📂 pdf
- ┃ ┃ ┗ 📜 Informe_final.pdf
- ┃ ┣ 📜 main.tex
+ ┃ ┃ ┗ 📜 Informe_Semana5.pdf
+ ┃ ┗ 📜 Informe_Semana5.tex
  ┣ 📜 main.py
  ┣ 📜 requirements.txt
- ┣ 📜 README.md
+ ┗ 📜 README.md
 ```
 
 ---
 
 ## 🛠️ Requisitos
 
-Instalar dependencias con:
+Para ejecutar este proyecto, necesitas tener Python instalado. Puedes instalar todas las dependencias necesarias ejecutando el siguiente comando en tu terminal:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 📦 Librerías principales
+### 📦 Librerías Principales
 
 * `pandas`
 * `numpy`
@@ -59,7 +58,7 @@ pip install -r requirements.txt
 
 ## ▶️ Ejecución
 
-Entrenar y evaluar el modelo:
+Para entrenar el modelo, ejecutar las 50 simulaciones y generar los gráficos, simplemente ejecuta el script principal desde tu terminal:
 
 ```bash
 python main.py
@@ -67,61 +66,73 @@ python main.py
 
 Esto generará:
 
-* Métricas en consola.
-* Gráficos en la carpeta `Gráficos/`.
+* Un resumen numérico del rendimiento en la consola.
+* Los gráficos `arbol_de_decision_final.png` y `desempeno_final.png` en la carpeta `Graficos/`.
 
 ---
 
 ## 📊 Resultados y Gráficos
 
-### 🔹 1. Correlación de variables
-### 🔹 2. Matriz de confusión
-### 🔹 3. Importancia de las características
-### 🔹 4. Distribución de probabilidades
+### 🔹 1. Desempeño del Modelo en 50 Simulaciones
+
+Este gráfico muestra la Exactitud, el F1-Score y el Z-Score a lo largo de las 50 ejecuciones. Permite evaluar tanto el rendimiento promedio como la estabilidad del modelo.
+
+![Gráfico de Desempeño](Graficos/desempeno_final.png)
+
+### 🔹 2. Visualización del Árbol de Decisión
+
+Este gráfico muestra la lógica interna del modelo final, visualizando las reglas que aprendió para clasificar los correos después de eliminar la fuga de datos.
+
+![Árbol de Decisión](Graficos/arbol_de_decision_final.png)
 
 ---
 
 ## 📑 Informe en LaTeX
 
-El informe académico completo está disponible en:
+El informe académico completo, que detalla la metodología, el descubrimiento de la fuga de datos y las conclusiones, está disponible en:
 
-* 📄 [Informe Final en PDF](Informe/pdf/Informe_final.pdf)
-* 📜 [Código LaTeX](Informe/main.tex)
+* 📄 **[Informe Final en PDF](Informe/pdf/Informe_final.pdf)**
+* 📜 **[Código Fuente LaTeX](Informe/main.tex)**
 
-📌 **Cómo usar en Overleaf**:
-
-1. Descarga la carpeta `Informe/`.
-2. Súbela a [Overleaf](https://www.overleaf.com/).
-3. Compila con **pdfLaTeX** para generar el documento.
+📌 **Cómo compilar en Overleaf**:
+1.  Crea un nuevo proyecto en [Overleaf](https://www.overleaf.com/).
+2.  Sube los archivos `Informe_final.tex` y las imágenes de la carpeta `Graficos/`.
+3.  Compila el proyecto para generar el PDF.
 
 ---
 
-## 📈 Métricas de rendimiento
+## 📈 Métricas de Rendimiento (Resultados Finales)
+
+Después de corregir la fuga de datos, el modelo presenta un rendimiento realista y robusto. A continuación se muestra un ejemplo de los resultados obtenidos tras las 50 simulaciones:
 
 ```
---- Métricas de Rendimiento y Error ---
-Exactitud (Accuracy): 1.0000
-Tasa de Error: 0.0000
-Precisión para SPAM: 1.0000
-F1-Score para SPAM: 1.0000
----------------------------------------
---- Validación Cruzada ---
-F1 promedio: 1.0000 +- 0.0000
-Accuracy promedio: 1.0000 +- 0.0000
-```
+==================================================
+     RESUMEN DE PRECISIÓN EN LAS 50 EJECUCIONES
+==================================================
 
-⚠️ Estos resultados reflejan un **sobreajuste**, ya que en contextos reales el rendimiento nunca es perfecto. Esto abre la discusión sobre la necesidad de datasets más variados y representativos.
+Exactitud (Accuracy):
+  - Precisión Promedio: 0.9580
+  - Desviación Estándar: 0.0216
+  - Mejor Ejecución:    1.0000
+  - Peor Ejecución:     0.9000
+
+F1-Score:
+  - F1-Score Promedio:  0.9579
+  - Desviación Estándar: 0.0217
+```
+*(Nota: Estos valores pueden variar ligeramente en cada ejecución completa del script)*
 
 ---
 
 ## 📌 Conclusiones
 
-* La **Regresión Logística** es efectiva para tareas de clasificación binaria como SPAM vs HAM.
-* El dataset empleado permitió un **100% de rendimiento**, pero se identificó riesgo de sobreajuste.
-* Se evidenció la importancia de la ingeniería de características y el análisis gráfico.
-* El informe académico documenta tanto la metodología como los resultados.
+* El modelo de **Árbol de Decisión (CART)** es altamente efectivo para la clasificación de SPAM/HAM, logrando una precisión promedio superior al 95% con datos realistas.
+* Se identificó y corrigió un severo problema de **fuga de datos**, demostrando la importancia crítica de la selección de características y el análisis exploratorio.
+* La simulación de 50 ejecuciones confirmó la **estabilidad y consistencia** del modelo final.
+* El proyecto cumple con todos los requisitos de la actividad, documentando de manera transparente tanto la metodología como los hallazgos.
 
 ---
+
 
 ## ✍️ Autor
 

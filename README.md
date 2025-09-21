@@ -29,8 +29,8 @@ El núcleo de este proyecto no fue solo construir un clasificador, sino también
  ┃ ┗ 📊 desempeno_final.png
  ┣ 📂 Informe
  ┃ ┣ 📂 pdf
- ┃ ┃ ┗ 📜 Informe_Semana5.pdf
- ┃ ┗ 📜 Informe_Semana5.tex
+ ┃ ┃ ┗ 📜 Informe_final.pdf
+ ┃ ┗ 📜 main.tex
  ┣ 📜 main.py
  ┣ 📜 requirements.txt
  ┗ 📜 README.md
